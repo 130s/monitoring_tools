@@ -34,8 +34,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'data_publisher = topic_monitor.scripts.data_publisher:main',
-            'topic_monitor = topic_monitor.scripts.topic_monitor:main',
+            'data_publisher = topic_monitor.exec.data_publisher:main',
+            'topic_monitor = topic_monitor.exec.topic_monitor:main',
         ],
     },
 )
