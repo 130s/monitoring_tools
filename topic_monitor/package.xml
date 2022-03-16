@@ -5,14 +5,14 @@
   <version>0.20.0</version>
   <description>Package containing tools for monitoring ROS 2 topics.</description>
 
-  <maintainer email="audrow@openrobotics.org">Audrow Nash</maintainer>
-  <maintainer email="michael.jeronimo@openrobotics.org">Michael Jeronimo</maintainer>
-
   <license>Apache License 2.0</license>
+  <maintainer email="130s@2000.jukuin.keio.ac.jp">Isaac Saito</maintainer>
 
   <author>D. Hood</author>
   <author email="mabel@openrobotics.org">Mabel Zhang</author>
   <author email="scott@openrobotics.org">Scott K Logan</author>
+  <author email="audrow@openrobotics.org">Audrow Nash</author>
+  <author email="michael.jeronimo@openrobotics.org">Michael Jeronimo</author>
 
   <build_depend>rclpy</build_depend>
 
