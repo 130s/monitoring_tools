@@ -26,7 +26,7 @@ from rclpy.qos import QoSReliabilityPolicy
 from std_msgs.msg import Float32, Header
 
 QOS_DEPTH = 10
-logger = rclpy.logging.get_logger('topic_monitor')
+logger = rclpy.logging.get_logger('topic_monitor_rcl')
 
 
 class MonitoredTopic:
@@ -224,14 +224,14 @@ class TopicMonitor:
 class TopicMonitorDisplay:
     """Display of the monitored topic reception rates."""
 
-    def __init__(self, topic_monitor, update_period):
+    def __init__(self, topic_monitor_rcl, update_period):
         self.colors = 'bgrcmykw'
         self.markers = 'o>sp*hDx+'
         self.monitored_topics = []
         self.reception_rate_plots = {}
         self.start_time = time.time()
         self.topic_count = 0
-        self.topic_monitor = topic_monitor
+        self.topic_monitor_rcl = topic_monitor_rcl
         self.x_data = []
         self.x_range = 120  # points
         self.x_range_s = self.x_range * update_period  # seconds
@@ -242,7 +242,7 @@ class TopicMonitorDisplay:
         self.fig = plt.figure()
         plt.title('Reception rate over time')
         plt.xlabel('Time (s)')
-        plt.ylabel('Reception rate (last %i msgs)' % self.topic_monitor.get_window_size())
+        plt.ylabel('Reception rate (last %i msgs)' % self.topic_monitor_rcl.get_window_size())
         self.ax = self.fig.get_axes()[0]
         self.ax.axis([0, self.x_range_s, 0, 1.1])
 
@@ -270,8 +270,8 @@ class TopicMonitorDisplay:
         now = time.time()
         now_relative = now - self.start_time
         self.x_data.append(now_relative)
-        with self.topic_monitor.monitored_topics_lock:
-            for topic_name, monitored_topic in self.topic_monitor.monitored_topics.items():
+        with self.topic_monitor_rcl.monitored_topics_lock:
+            for topic_name, monitored_topic in self.topic_monitor_rcl.monitored_topics.items():
                 if topic_name not in self.monitored_topics:
                     self.add_monitored_topic(topic_name)
 
@@ -293,16 +293,16 @@ class TopicMonitorDisplay:
 
 class DataReceivingThread(Thread):
 
-    def __init__(self, topic_monitor, options):
+    def __init__(self, topic_monitor_rcl, options):
         super(DataReceivingThread, self).__init__()
         rclpy.init()
-        self.topic_monitor = topic_monitor
+        self.topic_monitor_rcl = topic_monitor_rcl
         self.options = options
 
     def run(self):
-        self.node = rclpy.create_node('topic_monitor')
+        self.node = rclpy.create_node('topic_monitor_rcl')
         try:
-            run_topic_listening(self.node, self.topic_monitor, self.options)
+            run_topic_listening(self.node, self.topic_monitor_rcl, self.options)
         except KeyboardInterrupt:
             self.stop()
             raise
@@ -312,7 +312,7 @@ class DataReceivingThread(Thread):
         rclpy.shutdown()
 
 
-def run_topic_listening(node, topic_monitor, options):
+def run_topic_listening(node, topic_monitor_rcl, options):
     """Subscribe to relevant topics and manage the data received from susbcriptions."""
     already_ignored_topics = set()
     while rclpy.ok():
@@ -322,7 +322,7 @@ def run_topic_listening(node, topic_monitor, options):
 
         for topic_name, type_names in topic_names_and_types:
             # Infer the appropriate QoS profile from the topic name
-            topic_info = topic_monitor.get_topic_info(topic_name)
+            topic_info = topic_monitor_rcl.get_topic_info(topic_name)
             if topic_info is None:
                 # The topic is not for being monitored
                 continue
@@ -336,7 +336,7 @@ def run_topic_listening(node, topic_monitor, options):
                 continue
 
             type_name = type_names[0]
-            if not topic_monitor.is_supported_type(type_name):
+            if not topic_monitor_rcl.is_supported_type(type_name):
                 if topic_name not in already_ignored_topics:
                     node.get_logger().info(
                         "Warning: ignoring topic '%s' because its message type (%s)"
@@ -345,7 +345,7 @@ def run_topic_listening(node, topic_monitor, options):
                     already_ignored_topics.add(topic_name)
                 continue
 
-            is_new_topic = topic_name and topic_name not in topic_monitor.monitored_topics
+            is_new_topic = topic_name and topic_name not in topic_monitor_rcl.monitored_topics
             if is_new_topic:
                 # Register new topic with the monitor
                 qos_profile = QoSProfile(depth=10)
@@ -353,7 +353,7 @@ def run_topic_listening(node, topic_monitor, options):
                 if topic_info['reliability'] == 'best_effort':
                     qos_profile.reliability = \
                         QoSReliabilityPolicy.BEST_EFFORT
-                topic_monitor.add_monitored_topic(
+                topic_monitor_rcl.add_monitored_topic(
                     Header, topic_name, node, qos_profile,
                     options.expected_period, options.allowed_latency, options.stale_time)
 
@@ -396,7 +396,7 @@ def main():
         except ImportError:
             raise RuntimeError('The --display option requires matplotlib to be installed')
 
-    topic_monitor = TopicMonitor(args.window_size)
+    topic_monitor_rcl = TopicMonitor(args.window_size)
 
     try:
         # Run two infinite loops simultaneously: one for receiving data (subscribing to topics and
@@ -407,23 +407,23 @@ def main():
         # in the main thread and run the "data receiving" loop in a secondary thread.
 
         # Start the "data receiving" loop in a new thread
-        data_receiving_thread = DataReceivingThread(topic_monitor, args)
+        data_receiving_thread = DataReceivingThread(topic_monitor_rcl, args)
         data_receiving_thread.start()
 
         # Start the "data processing" loop in the main thread
         # Process the data that has been received from topic subscriptions
         if args.show_display:
-            topic_monitor_display = TopicMonitorDisplay(topic_monitor, args.stats_calc_period)
+            topic_monitor_rcl_display = TopicMonitorDisplay(topic_monitor_rcl, args.stats_calc_period)
 
         last_time = time.time()
         while data_receiving_thread.is_alive():
             now = time.time()
             if now - last_time > args.stats_calc_period:
                 last_time = now
-                topic_monitor.check_status()
-                topic_monitor.calculate_statistics()
+                topic_monitor_rcl.check_status()
+                topic_monitor_rcl.calculate_statistics()
                 if args.show_display:
-                    topic_monitor_display.update_display()
+                    topic_monitor_rcl_display.update_display()
                 # sleep the main thread so background threads can do work
                 time_to_sleep = args.stats_calc_period - (time.time() - now)
                 if time_to_sleep > 0:
