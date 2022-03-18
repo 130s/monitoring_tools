@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="2">
-  <name>topic_monitor</name>
+  <name>topic_monitor_rcl</name>
   <version>0.20.0</version>
   <description>Package containing tools for monitoring ROS 2 topics.</description>
   <maintainer email="130s@2000.jukuin.keio.ac.jp">Isaac Saito</maintainer>
@@ -23,7 +23,7 @@
   <exec_depend>std_msgs</exec_depend>
 
   <test_depend>ament_flake8</test_depend>
-  <!-- <test_depend>ament_pep257</test_depend> Commented out. Asked at https://github.com/ament/ament_lint/issues/360 -->
+  <test_depend>ament_pep257</test_depend>
   <test_depend>python3-pytest</test_depend>
 
   <export>

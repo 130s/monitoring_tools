@@ -17,22 +17,22 @@ import rospy
 from std_msgs.msg import Float32, Header
 from threading import Lock, Thread
 
-from topic_monitor import AbstDataReceivingThread, TopicMonitor
+from topic_monitor_ros1 import AbstDataReceivingThread, TopicMonitor
 
 
 class DataReceivingThread(Thread):
 
-    def __init__(self, topic_monitor, options, node_name="topic_monitor_ros1"):
+    def __init__(self, topic_monitor_ros1, options, node_name="topic_monitor_ros1_ros1"):
         super(DataReceivingThread, self).__init__()
-        self.topic_monitor = topic_monitor
+        self.topic_monitor_ros1 = topic_monitor_ros1
         self.options = options
         self._node_name = node_name
 
     def run(self):
         rospy.init_node(self._node_name)
         try:
-            self.topic_monitor.run_topic_listening(
-                None, self.topic_monitor, self.options)
+            self.topic_monitor_ros1.run_topic_listening(
+                None, self.topic_monitor_ros1, self.options)
         except KeyboardInterrupt:
             self.stop()
             raise
@@ -49,7 +49,7 @@ class TopicMonitorRos1(TopicMonitor):
         for ROS1.     
     """
 
-    logger = rospy.logging.get_logger('topic_monitor_ros1')
+    logger = rospy.logging.get_logger('topic_monitor_ros1_ros1')
 
     def add_monitored_topic(
             self, topic_type, topic_name, 
@@ -92,20 +92,20 @@ class TopicMonitorRos1(TopicMonitor):
             self.publishers[topic_name] = reception_rate_publisher
             self.monitored_topics[topic_name] = monitored_topic
     
-    def run_topic_listening(self, topic_monitor, options, node=None):
+    def run_topic_listening(self, topic_monitor_ros1, options, node=None):
         while not rospy.is_shutdown():        
             # Check if there is a new topic online
             topic_names_and_types = rospy.get_published_topics()
             for topic_name, type_name in topic_names_and_types:
                 # Infer the appropriate QoS profile from the topic name
-                topic_info = topic_monitor.get_topic_info(topic_name)
+                topic_info = topic_monitor_ros1.get_topic_info(topic_name)
                 if topic_info is None:
                     # The topic is not for being monitored
                     continue
     
-                is_new_topic = topic_name and topic_name not in topic_monitor.monitored_topics
+                is_new_topic = topic_name and topic_name not in topic_monitor_ros1.monitored_topics
                 if is_new_topic:
-                    topic_monitor.add_monitored_topic(
+                    topic_monitor_ros1.add_monitored_topic(
                         Header, topic_name,
                         options.expected_period, options.allowed_latency, options.stale_time,
                         node=None, qos_profile=None)

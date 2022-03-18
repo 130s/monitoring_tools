@@ -4,7 +4,7 @@ import os
 from setuptools import find_packages
 from setuptools import setup
 
-package_name = 'topic_monitor'
+package_name = 'topic_monitor_ros1'
 
 setup(
     name=package_name,
@@ -12,13 +12,10 @@ setup(
     packages=find_packages(exclude=['test']),
     data_files=[
         ('share/ament_index/resource_index/packages',
-            ['resource/' + package_name]),
+            ['resource/' + package_name]),        
         ('share/' + package_name, ['package.xml']),
-        ('share/topic_monitor/launch',
-            glob.glob(os.path.join('launch', '*.launch.py'))),
     ],
     install_requires=[
-        'launch',
         'setuptools',
     ],
     zip_safe=True,
@@ -34,7 +31,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'data_publisher = topic_monitor.exec.data_publisher:main',
+            'topic_monitor = topic_monitor_ros1.topic_monitor:main',
         ],
     },
 )
