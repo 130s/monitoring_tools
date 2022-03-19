@@ -17,7 +17,11 @@ import rospy
 from std_msgs.msg import Float32, Header
 from threading import Lock, Thread
 
-from topic_monitor_ros1 import AbstDataReceivingThread, TopicMonitor
+## For some reason the following '%PKG%.%MODULE% fails when executed via
+## 'rosrun', but not by Python w/o rosrun. Haven't dug deeper. Tracked in
+## https://github.com/130s/monitoring_tools/issues/1
+#from topic_monitor.topic_monitor import AbstDataReceivingThread, TopicMonitor
+from topic_monitor import AbstDataReceivingThread, MonitoredTopic, TopicMonitor
 
 
 class DataReceivingThread(Thread):
@@ -46,10 +50,8 @@ class TopicMonitorRos1(TopicMonitor):
     """
     @note: Due to the history where the code went through refactoring what was
         originally written for ROS2, there can be things that are unnecessary
-        for ROS1.     
+        for ROS1.
     """
-
-    logger = rospy.logging.get_logger('topic_monitor_ros1_ros1')
 
     def add_monitored_topic(
             self, topic_type, topic_name, 
@@ -57,7 +59,7 @@ class TopicMonitorRos1(TopicMonitor):
             node=None, qos_profile=None):
         # Create a subscription to the topic
         monitored_topic = MonitoredTopic(topic_name, stale_time, lock=self.monitored_topics_lock)
-        
+
         rospy.loginfo('Subscribing to topic: {}'.format(topic_name))
         sub = rospy.Subscriber(topic_name,
                                topic_type,
@@ -91,7 +93,7 @@ class TopicMonitorRos1(TopicMonitor):
             monitored_topic.allowed_latency_timer = allowed_latency_timer
             self.publishers[topic_name] = reception_rate_publisher
             self.monitored_topics[topic_name] = monitored_topic
-    
+
     def run_topic_listening(self, topic_monitor_ros1, options, node=None):
         while not rospy.is_shutdown():        
             # Check if there is a new topic online
@@ -102,19 +104,15 @@ class TopicMonitorRos1(TopicMonitor):
                 if topic_info is None:
                     # The topic is not for being monitored
                     continue
-    
+
                 is_new_topic = topic_name and topic_name not in topic_monitor_ros1.monitored_topics
                 if is_new_topic:
                     topic_monitor_ros1.add_monitored_topic(
                         Header, topic_name,
                         options.expected_period, options.allowed_latency, options.stale_time,
                         node=None, qos_profile=None)
-    
+
             # Wait for messages with a timeout, otherwise this thread will block any other threads
             # until a message is received
             rospy.loginfo("Right before rospy.spin()")
             rospy.spin()
-
-
-if __name__ == '__main__':
-    TopicMonitorRos1.main(TopicMonitorRos1)
