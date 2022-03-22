@@ -1,0 +1,6 @@
+#! /usr/bin/env python
+
+from topic_monitor.topic_monitor_ros1 import DataReceivingThread, TopicMonitorRos1
+
+if __name__ == '__main__':
+    TopicMonitorRos1.main(TopicMonitorRos1, DataReceivingThread)

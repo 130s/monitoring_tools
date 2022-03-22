@@ -4,28 +4,20 @@
   <name>topic_monitor</name>
   <version>0.20.0</version>
   <description>Package containing tools for monitoring ROS 2 topics.</description>
-
-  <license>Apache License 2.0</license>
   <maintainer email="130s@2000.jukuin.keio.ac.jp">Isaac Saito</maintainer>
+  <license>Apache License 2.0</license>
 
   <author>D. Hood</author>
   <author email="mabel@openrobotics.org">Mabel Zhang</author>
   <author email="scott@openrobotics.org">Scott K Logan</author>
   <author email="audrow@openrobotics.org">Audrow Nash</author>
   <author email="michael.jeronimo@openrobotics.org">Michael Jeronimo</author>
+  <author email="130s@2000.jukuin.keio.ac.jp">Isaac I.Y. Saito</author>
 
-  <build_depend>rclpy</build_depend>
-
-  <exec_depend>launch</exec_depend>
-  <exec_depend>launch_ros</exec_depend>
-  <exec_depend>rclpy</exec_depend>
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>python3-colcon-common-extensions</exec_depend>
+  <exec_depend>roslaunch</exec_depend>
+  <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
-
-  <test_depend>ament_flake8</test_depend>
-  <test_depend>ament_pep257</test_depend>
   <test_depend>python3-pytest</test_depend>
-
-  <export>
-    <build_type>ament_python</build_type>
-  </export>
 </package>

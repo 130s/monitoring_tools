@@ -17,22 +17,26 @@ import rospy
 from std_msgs.msg import Float32, Header
 from threading import Lock, Thread
 
-from topic_monitor import AbstDataReceivingThread, TopicMonitor
+## For some reason the following '%PKG%.%MODULE% fails when executed via
+## 'rosrun', but not by Python w/o rosrun. Haven't dug deeper. Tracked in
+## https://github.com/130s/monitoring_tools/issues/1
+#from topic_monitor.topic_monitor import AbstDataReceivingThread, TopicMonitor
+from topic_monitor import AbstDataReceivingThread, MonitoredTopic, TopicMonitor
 
 
 class DataReceivingThread(Thread):
 
-    def __init__(self, topic_monitor, options, node_name="topic_monitor_ros1"):
+    def __init__(self, topic_monitor_ros1, options, node_name="topic_monitor_ros1_ros1"):
         super(DataReceivingThread, self).__init__()
-        self.topic_monitor = topic_monitor
+        self.topic_monitor_ros1 = topic_monitor_ros1
         self.options = options
         self._node_name = node_name
 
     def run(self):
         rospy.init_node(self._node_name)
         try:
-            self.topic_monitor.run_topic_listening(
-                None, self.topic_monitor, self.options)
+            self.topic_monitor_ros1.run_topic_listening(
+                None, self.topic_monitor_ros1, self.options)
         except KeyboardInterrupt:
             self.stop()
             raise
@@ -46,10 +50,8 @@ class TopicMonitorRos1(TopicMonitor):
     """
     @note: Due to the history where the code went through refactoring what was
         originally written for ROS2, there can be things that are unnecessary
-        for ROS1.     
+        for ROS1.
     """
-
-    logger = rospy.logging.get_logger('topic_monitor_ros1')
 
     def add_monitored_topic(
             self, topic_type, topic_name, 
@@ -57,7 +59,7 @@ class TopicMonitorRos1(TopicMonitor):
             node=None, qos_profile=None):
         # Create a subscription to the topic
         monitored_topic = MonitoredTopic(topic_name, stale_time, lock=self.monitored_topics_lock)
-        
+
         rospy.loginfo('Subscribing to topic: {}'.format(topic_name))
         sub = rospy.Subscriber(topic_name,
                                topic_type,
@@ -91,30 +93,26 @@ class TopicMonitorRos1(TopicMonitor):
             monitored_topic.allowed_latency_timer = allowed_latency_timer
             self.publishers[topic_name] = reception_rate_publisher
             self.monitored_topics[topic_name] = monitored_topic
-    
-    def run_topic_listening(self, topic_monitor, options, node=None):
+
+    def run_topic_listening(self, topic_monitor_ros1, options, node=None):
         while not rospy.is_shutdown():        
             # Check if there is a new topic online
             topic_names_and_types = rospy.get_published_topics()
             for topic_name, type_name in topic_names_and_types:
                 # Infer the appropriate QoS profile from the topic name
-                topic_info = topic_monitor.get_topic_info(topic_name)
+                topic_info = topic_monitor_ros1.get_topic_info(topic_name)
                 if topic_info is None:
                     # The topic is not for being monitored
                     continue
-    
-                is_new_topic = topic_name and topic_name not in topic_monitor.monitored_topics
+
+                is_new_topic = topic_name and topic_name not in topic_monitor_ros1.monitored_topics
                 if is_new_topic:
-                    topic_monitor.add_monitored_topic(
+                    topic_monitor_ros1.add_monitored_topic(
                         Header, topic_name,
                         options.expected_period, options.allowed_latency, options.stale_time,
                         node=None, qos_profile=None)
-    
+
             # Wait for messages with a timeout, otherwise this thread will block any other threads
             # until a message is received
             rospy.loginfo("Right before rospy.spin()")
             rospy.spin()
-
-
-if __name__ == '__main__':
-    TopicMonitorRos1.main(TopicMonitorRos1)

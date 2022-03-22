@@ -27,6 +27,7 @@ class MonitoredTopic:
     """
     @summary: Monitor for the statistics and status of a single topic. 
     """
+    logger = None  # TODO Impl this line with a concrete logger instance.
 
     def __init__(self, topic_id, stale_time, lock):
         self.expected_value = None
@@ -111,7 +112,9 @@ class MonitoredTopic:
 class TopicMonitor:
     """Monitor of a set of topics that match a specified topic name pattern."""
 
-    def __init__(self, window_size):
+    DEFAULT_MONITORING_WINDOW_SIZE = 20
+
+    def __init__(self, window_size=DEFAULT_MONITORING_WINDOW_SIZE):
         self.data_topic_pattern = re.compile(r'(/(?P<data_name>\w*)_data_?(?P<reliability>\w*))')
         self.monitored_topics = {}
         self.monitored_topics_lock = Lock()
@@ -153,7 +156,8 @@ class TopicMonitor:
             help='Time in seconds between calculating topic statistics')
     
         parser.add_argument(
-            '-n', '--window-size', type=int, nargs='?', default=20,
+            '-n', '--window-size', type=int, nargs='?',
+            default=TopicMonitor.DEFAULT_MONITORING_WINDOW_SIZE,
             help='Number of messages in calculation of topic statistics')
     
         args = parser.parse_args()
@@ -213,8 +217,7 @@ class TopicMonitor:
     @abstractmethod
     def add_monitored_topic(
             self, topic_type, topic_name,
-            expected_period=1.0, allowed_latency=1.0, stale_time=1.0,
-            node, qos_profile):
+            expected_period=1.0, allowed_latency=1.0, stale_time=1.0):
         raise NotImplementedError()
 
     def is_supported_type(self, type_name):
