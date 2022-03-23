@@ -26,17 +26,15 @@ from topic_monitor import AbstDataReceivingThread, MonitoredTopic, TopicMonitor
 
 class DataReceivingThread(Thread):
 
-    def __init__(self, topic_monitor_ros1, options, node_name="topic_monitor_ros1_ros1"):
+    def __init__(self, topic_monitor_ros1, options):
         super(DataReceivingThread, self).__init__()
         self.topic_monitor_ros1 = topic_monitor_ros1
         self.options = options
-        self._node_name = node_name
 
     def run(self):
-        rospy.init_node(self._node_name)
         try:
             self.topic_monitor_ros1.run_topic_listening(
-                None, self.topic_monitor_ros1, self.options)
+                self.options, None)
         except KeyboardInterrupt:
             self.stop()
             raise
@@ -52,6 +50,11 @@ class TopicMonitorRos1(TopicMonitor):
         originally written for ROS2, there can be things that are unnecessary
         for ROS1.
     """
+
+    def __init__(self, nodename=TopicMonitor.NODE_NAME,
+                 window_size=TopicMonitor.DEFAULT_MONITORING_WINDOW_SIZE):
+        rospy.init_node(nodename)
+        TopicMonitor.__init__(self, window_size)
 
     def add_monitored_topic(
             self, topic_type, topic_name, 
@@ -94,25 +97,26 @@ class TopicMonitorRos1(TopicMonitor):
             self.publishers[topic_name] = reception_rate_publisher
             self.monitored_topics[topic_name] = monitored_topic
 
-    def run_topic_listening(self, topic_monitor_ros1, options, node=None):
-        while not rospy.is_shutdown():        
+    def run_topic_listening(self, options, node=None):
+        while not rospy.is_shutdown():
             # Check if there is a new topic online
             topic_names_and_types = rospy.get_published_topics()
+            rospy.loginfo("topic_names_and_types: {}".format(topic_names_and_types))
             for topic_name, type_name in topic_names_and_types:
                 # Infer the appropriate QoS profile from the topic name
-                topic_info = topic_monitor_ros1.get_topic_info(topic_name)
+                topic_info = self.get_topic_info(topic_name)
                 if topic_info is None:
                     # The topic is not for being monitored
                     continue
 
-                is_new_topic = topic_name and topic_name not in topic_monitor_ros1.monitored_topics
+                is_new_topic = topic_name and topic_name not in self.monitored_topics
                 if is_new_topic:
-                    topic_monitor_ros1.add_monitored_topic(
+                    self.add_monitored_topic(
                         Header, topic_name,
                         options.expected_period, options.allowed_latency, options.stale_time,
                         node=None, qos_profile=None)
 
             # Wait for messages with a timeout, otherwise this thread will block any other threads
             # until a message is received
-            rospy.loginfo("Right before rospy.spin()")
-            rospy.spin()
+            #rospy.loginfo("Right before rospy.spin()")
+            #rospy.spin()

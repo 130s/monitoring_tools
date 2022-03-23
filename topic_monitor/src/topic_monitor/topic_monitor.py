@@ -113,6 +113,7 @@ class TopicMonitor:
     """Monitor of a set of topics that match a specified topic name pattern."""
 
     DEFAULT_MONITORING_WINDOW_SIZE = 20
+    NODE_NAME = "topic_monitor"
 
     def __init__(self, window_size=DEFAULT_MONITORING_WINDOW_SIZE):
         self.data_topic_pattern = re.compile(r'(/(?P<data_name>\w*)_data_?(?P<reliability>\w*))')
@@ -124,7 +125,7 @@ class TopicMonitor:
         self.window_size = window_size
 
     @staticmethod
-    def main(topic_monitor_class, datarecv_thread_class):
+    def main(topic_monitor_class, datarecv_thread_class, show_display=False):
         """
         @summary: Method to take console input and instantiate the meat of
             the derived class.
@@ -136,7 +137,7 @@ class TopicMonitor:
         parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         parser.add_argument(
-            '-d', '--display', dest='show_display', action='store_true', default=False,
+            '-d', '--display', dest='show_display', action='store_true', default=show_display,
             help='Display the reception rate of topics (requires matplotlib)')
     
         parser.add_argument(
@@ -159,7 +160,7 @@ class TopicMonitor:
             '-n', '--window-size', type=int, nargs='?',
             default=TopicMonitor.DEFAULT_MONITORING_WINDOW_SIZE,
             help='Number of messages in calculation of topic statistics')
-    
+
         args = parser.parse_args()
         if args.show_display:
             try:
@@ -167,26 +168,27 @@ class TopicMonitor:
                 import matplotlib.pyplot as plt
             except ImportError:
                 raise RuntimeError('The --display option requires matplotlib to be installed')
-    
-        topic_monitor = topic_monitor_class(args.window_size)
-    
+
+        topic_monitor = topic_monitor_class(
+            TopicMonitor.NODE_NAME, args.window_size)
+
         try:
             # Run two infinite loops simultaneously: one for receiving data (subscribing to topics and
             # handling callbacks), and another for processing the received data (calculating the
             # reception rate and publishing/displaying it).
-    
+
             # Since the display needs to happen in the main thread, we run the "data processing" loop
             # in the main thread and run the "data receiving" loop in a secondary thread.
-    
+
             # Start the "data receiving" loop in a new thread
             data_receiving_thread = datarecv_thread_class(topic_monitor, args)
             data_receiving_thread.start()
-    
+
             # Start the "data processing" loop in the main thread
             # Process the data that has been received from topic subscriptions
             if args.show_display:
                 topic_monitor_display = TopicMonitorDisplay(topic_monitor, args.stats_calc_period)
-    
+
             last_time = time.time()
             while data_receiving_thread.is_alive():
                 now = time.time()

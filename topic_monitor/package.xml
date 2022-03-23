@@ -16,8 +16,10 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <exec_depend>python3-colcon-common-extensions</exec_depend>
+  <exec_depend>python-matplotlib</exec_depend>  <!-- For 18.04/melodic this. For 20.04 this needs to be py3 ver. -->
   <exec_depend>roslaunch</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
+
   <test_depend>python3-pytest</test_depend>
 </package>
